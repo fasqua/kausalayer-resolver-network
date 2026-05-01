@@ -1020,7 +1020,11 @@ name = "krn"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "ark-bn254 0.4.0",
+ "ark-ff 0.4.2",
+ "ark-serialize 0.4.2",
  "groth16-solana",
+ "sha2 0.10.9",
  "solana-keccak-hasher",
  "solana-secp256k1-recover",
  "solana-sha256-hasher",

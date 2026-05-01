@@ -12,3 +12,5 @@ prover/reclaim/proof-sample.json
 *.ptau
 *.zkey
 *.wtns
+zktls-prover/verify-test/
+zktls-prover/output/guest_input.json

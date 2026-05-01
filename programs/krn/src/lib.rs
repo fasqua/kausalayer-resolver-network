@@ -78,4 +78,15 @@ pub mod krn {
     ) -> Result<()> {
         instructions::refund_market::handle_refund_market(ctx, market_id)
     }
+
+    pub fn verify_sp1_zktls(
+        _ctx: Context<VerifySp1ZkTls>,
+        proof_data: SP1ZkTlsProofData,
+    ) -> Result<()> {
+        instructions::sp1_verifier::verify_sp1_zktls_proof(&proof_data)?;
+        msg!("SP1 zkTLS proof verified on-chain");
+        msg!("Public values: {} bytes", proof_data.public_values.len());
+        msg!("Proof: {} bytes", proof_data.proof.len());
+        Ok(())
+    }
 }

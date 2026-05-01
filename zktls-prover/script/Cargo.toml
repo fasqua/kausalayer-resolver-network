@@ -1,0 +1,18 @@
+[package]
+name = "krn-zktls-script"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sp1-sdk = { version = "6.1.0", features = ["blocking", "network"] }
+zktls-program-core = { git = "https://github.com/the3cloud/zkvm-programs.git", tag = "v0.2.5" }
+zktls-input-builder = { git = "https://github.com/the3cloud/zktls.git" }
+zktls-core = { git = "https://github.com/the3cloud/zktls.git" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+ciborium = "0.2.0"
+alloy-primitives = "0.8.23"
+anyhow = "1.0"
+tokio = { version = "1", features = ["full"] }
+
+[workspace]

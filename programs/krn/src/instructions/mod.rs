@@ -8,6 +8,7 @@ pub mod fallback_resolve;
 pub mod refund_market;
 pub mod verifier;
 pub mod ownership_verifier;
+pub mod sp1_verifier;
 
 pub use init_market::*;
 pub use place_bet::*;
@@ -19,3 +20,4 @@ pub use fallback_resolve::*;
 pub use refund_market::*;
 pub use verifier::*;
 pub use ownership_verifier::*;
+pub use sp1_verifier::*;

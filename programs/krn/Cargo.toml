@@ -26,6 +26,11 @@ solana-sha256-hasher = "2"
 solana-keccak-hasher = "2"
 solana-secp256k1-recover = "2"
 groth16-solana = "0.2.0"
+ark-bn254 = "0.4.0"
+ark-ff = "0.4.0"
+ark-serialize = "0.4.0"
+sha2 = "0.10"
+# sp1-solana removed - using custom SP1 v6 verifier in sp1_verifier.rs
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
