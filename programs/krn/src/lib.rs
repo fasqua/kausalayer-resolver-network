@@ -46,9 +46,9 @@ pub mod krn {
         market_id: [u8; 32],
         source_index: u8,
         claimed_outcome: u8,
-        proof_data: Vec<u8>,
+        reclaim_proof: ReclaimProof,
     ) -> Result<()> {
-        instructions::submit_proof::handle_submit_proof(ctx, market_id, source_index, claimed_outcome, proof_data)
+        instructions::submit_proof::handle_submit_proof(ctx, market_id, source_index, claimed_outcome, reclaim_proof)
     }
 
     pub fn aggregate_resolution(ctx: Context<AggregateResolution>) -> Result<()> {

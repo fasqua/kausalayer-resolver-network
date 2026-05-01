@@ -7,6 +7,7 @@ pub mod claim_winning;
 pub mod fallback_resolve;
 pub mod refund_market;
 pub mod verifier;
+pub mod ownership_verifier;
 
 pub use init_market::*;
 pub use place_bet::*;
@@ -17,3 +18,4 @@ pub use claim_winning::*;
 pub use fallback_resolve::*;
 pub use refund_market::*;
 pub use verifier::*;
+pub use ownership_verifier::*;

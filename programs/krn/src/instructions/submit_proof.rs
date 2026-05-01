@@ -1,15 +1,16 @@
 use anchor_lang::prelude::*;
 use crate::state::*;
 use crate::errors::KrnError;
+use crate::instructions::verifier::{ReclaimProof, verify_reclaim_proof};
 
 /// Submits a zkTLS proof for a specific source.
-/// Anyone can submit (permissionless), but proof must be valid.
+/// Anyone can submit (permissionless), but proof must be verified against a known Reclaim Protocol attestor.
 pub fn handle_submit_proof(
     ctx: Context<SubmitProof>,
     _market_id: [u8; 32],
     source_index: u8,
     claimed_outcome: u8,
-    proof_data: Vec<u8>,
+    reclaim_proof: ReclaimProof,
 ) -> Result<()> {
     let market = &mut ctx.accounts.market;
     require!(
@@ -28,11 +29,12 @@ pub fn handle_submit_proof(
         KrnError::InvalidSourceIndex
     );
 
-    // TODO: Verify zkTLS proof cryptographically
-    // For Phase 1, validate proof_data is non-empty as placeholder
-    require!(!proof_data.is_empty(), KrnError::InvalidZkTlsProof);
+    // Verify zkTLS proof: recover signer from ECDSA signature
+    // and check it matches known Reclaim attestor
+    let is_valid = verify_reclaim_proof(&reclaim_proof)?;
+    require!(is_valid, KrnError::InvalidZkTlsProof);
 
-    let proof_hash = solana_sha256_hasher::hash(&proof_data).to_bytes();
+    let proof_hash = reclaim_proof.identifier;
 
     // Record submission
     let submission = &mut ctx.accounts.proof_submission;

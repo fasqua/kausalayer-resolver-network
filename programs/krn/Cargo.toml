@@ -24,6 +24,7 @@ anchor-lang = "0.32.1"
 solana-sha256-hasher = "2"
 solana-keccak-hasher = "2"
 solana-secp256k1-recover = "2"
+groth16-solana = "0.2.0"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
