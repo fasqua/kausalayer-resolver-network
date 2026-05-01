@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use crate::state::*;
 use crate::errors::KrnError;
+use crate::instructions::ownership_verifier::{OwnershipProofData, verify_ownership_proof, validate_ownership_public_inputs};
 
 /// Claims winnings using a ZK ownership proof.
 /// Winner proves they hold a winning ticket without revealing their betting address.
@@ -9,7 +10,7 @@ pub fn handle_claim_winning(
     ctx: Context<ClaimWinning>,
     _market_id: [u8; 32],
     _nullifier: [u8; 32],
-    ownership_proof: Vec<u8>,
+    ownership_proof: OwnershipProofData,
 ) -> Result<()> {
     let market = &ctx.accounts.market;
     require!(
@@ -17,9 +18,17 @@ pub fn handle_claim_winning(
         KrnError::MarketNotResolved
     );
 
-    // TODO: Verify Groth16 ownership proof on-chain
-    // For Phase 1, validate proof is non-empty as placeholder
-    require!(!ownership_proof.is_empty(), KrnError::InvalidOwnershipProof);
+    // Validate proof public inputs match on-chain state
+    validate_ownership_public_inputs(
+        &ownership_proof,
+        &market.market_id,
+        market.outcome,
+        &_nullifier,
+        &market.commitment_root,
+    )?;
+
+    // Verify Groth16 ownership proof on-chain
+    verify_ownership_proof(&ownership_proof)?;
 
     // Record nullifier to prevent double-claiming
     let nullifier_account = &mut ctx.accounts.nullifier_account;

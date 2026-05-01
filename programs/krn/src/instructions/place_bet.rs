@@ -8,6 +8,7 @@ pub fn handle_place_bet(
     ctx: Context<PlaceBet>,
     _market_id: [u8; 32],
     commitment_hash: [u8; 32],
+    commitment_root: [u8; 32],
     side: u8,
     amount: u64,
 ) -> Result<()> {
@@ -48,6 +49,9 @@ pub fn handle_place_bet(
     commitment.amount = amount;
     commitment.claimed = false;
     commitment.bump = ctx.bumps.commitment;
+
+    // Update market commitment root (client computes Merkle root off-chain)
+    market.commitment_root = commitment_root;
 
     msg!("Bet placed: side={}, amount={}", side, amount);
     Ok(())

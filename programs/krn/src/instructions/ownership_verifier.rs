@@ -1,4 +1,5 @@
-use groth16_solana::groth16::Groth16Verifyingkey;
+use anchor_lang::prelude::*;
+use groth16_solana::groth16::{Groth16Verifyingkey, Groth16Verifier};
 
 // Auto-generated verifying key from ownership.circom
 // 4 public inputs: market_id, resolved_outcome, nullifier, commitment_root
@@ -87,3 +88,77 @@ pub const OWNERSHIP_VK: Groth16Verifyingkey = Groth16Verifyingkey {
     vk_delta_g2: VK_DELTA_G2,
     vk_ic: &VK_IC,
 };
+
+
+/// Ownership proof data submitted by the claimer.
+/// Client pre-processes snarkjs proof into this format.
+/// proof_a must be negated by client before submission.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
+pub struct OwnershipProofData {
+    /// Negated proof point A (G1, 64 bytes big-endian)
+    pub proof_a: [u8; 64],
+    /// Proof point B (G2, 128 bytes big-endian)
+    pub proof_b: [u8; 128],
+    /// Proof point C (G1, 64 bytes big-endian)
+    pub proof_c: [u8; 64],
+    /// Public inputs: [market_id, resolved_outcome, nullifier, commitment_root]
+    /// Each 32 bytes big-endian
+    pub public_inputs: [[u8; 32]; 4],
+}
+
+/// Verifies a Groth16 ownership proof on-chain using alt_bn128 syscalls.
+/// Returns Ok(()) if proof is valid, error otherwise.
+pub fn verify_ownership_proof(proof: &OwnershipProofData) -> Result<()> {
+    let mut verifier = Groth16Verifier::new(
+        &proof.proof_a,
+        &proof.proof_b,
+        &proof.proof_c,
+        &proof.public_inputs,
+        &OWNERSHIP_VK,
+    )
+    .map_err(|_| error!(crate::errors::KrnError::InvalidOwnershipProof))?;
+
+    verifier
+        .verify()
+        .map_err(|_| error!(crate::errors::KrnError::InvalidOwnershipProof))?;
+
+    Ok(())
+}
+
+/// Validates that the proof's public inputs match the on-chain market state.
+/// This prevents using a valid proof generated for a different market/outcome.
+pub fn validate_ownership_public_inputs(
+    proof: &OwnershipProofData,
+    market_id: &[u8; 32],
+    outcome: u8,
+    nullifier: &[u8; 32],
+    commitment_root: &[u8; 32],
+) -> Result<()> {
+    // Public input [0]: market_id
+    require!(
+        proof.public_inputs[0] == *market_id,
+        crate::errors::KrnError::PublicInputMismatch
+    );
+
+    // Public input [1]: resolved_outcome (u8 as 32-byte big-endian field element)
+    let mut expected_outcome = [0u8; 32];
+    expected_outcome[31] = outcome;
+    require!(
+        proof.public_inputs[1] == expected_outcome,
+        crate::errors::KrnError::PublicInputMismatch
+    );
+
+    // Public input [2]: nullifier
+    require!(
+        proof.public_inputs[2] == *nullifier,
+        crate::errors::KrnError::PublicInputMismatch
+    );
+
+    // Public input [3]: commitment_root
+    require!(
+        proof.public_inputs[3] == *commitment_root,
+        crate::errors::KrnError::PublicInputMismatch
+    );
+
+    Ok(())
+}

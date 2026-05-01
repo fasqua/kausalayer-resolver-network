@@ -91,6 +91,7 @@ describe("krn", () => {
   it("Places a YES bet", async () => {
     const betAmount = new anchor.BN(0.5 * LAMPORTS_PER_SOL);
     const commitmentHash = sha256("secret-nonce-bettor1-yes");
+    const commitmentRoot = sha256("commitment-root-poc");
     const side = 1; // YES
 
     const [commitmentPda] = PublicKey.findProgramAddressSync(
@@ -103,7 +104,7 @@ describe("krn", () => {
     );
 
     const tx = await program.methods
-      .placeBet(marketId, commitmentHash, side, betAmount)
+      .placeBet(marketId, commitmentHash, commitmentRoot, side, betAmount)
       .accounts({
         market: marketPda,
         commitment: commitmentPda,
@@ -133,6 +134,7 @@ describe("krn", () => {
   it("Rejects bet with invalid side", async () => {
     const betAmount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
     const commitmentHash = sha256("secret-nonce-invalid");
+    const commitmentRoot = sha256("commitment-root-poc");
     const invalidSide = 5;
 
     const newBettor = anchor.web3.Keypair.generate();
@@ -155,7 +157,7 @@ describe("krn", () => {
 
     try {
       await program.methods
-        .placeBet(marketId, commitmentHash, invalidSide, betAmount)
+        .placeBet(marketId, commitmentHash, commitmentRoot, invalidSide, betAmount)
         .accounts({
           market: marketPda,
           commitment: commitmentPda,

@@ -22,6 +22,8 @@ pub enum KrnError {
     InvalidZkTlsProof,
     #[msg("Invalid ownership proof")]
     InvalidOwnershipProof,
+    #[msg("Ownership proof public inputs do not match on-chain state")]
+    PublicInputMismatch,
     #[msg("No majority reached for resolution")]
     NoMajority,
     #[msg("Not enough proofs submitted")]
