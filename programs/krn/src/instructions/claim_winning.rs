@@ -18,13 +18,17 @@ pub fn handle_claim_winning(
         KrnError::MarketNotResolved
     );
 
-    // Validate proof public inputs match on-chain state
+    // Get commitment for amount validation
+    let commitment = &ctx.accounts.commitment;
+
+    // Validate proof public inputs match on-chain state (including amount)
     validate_ownership_public_inputs(
         &ownership_proof,
         &market.market_id,
         market.outcome,
         &_nullifier,
         &market.commitment_root,
+        commitment.amount,
     )?;
 
     // Verify Groth16 ownership proof on-chain
@@ -36,9 +40,6 @@ pub fn handle_claim_winning(
     nullifier_account.nullifier = _nullifier;
     nullifier_account.claimed_at = Clock::get()?.unix_timestamp;
     nullifier_account.bump = ctx.bumps.nullifier_account;
-
-    // Calculate payout based on commitment amount and pool ratios
-    let commitment = &ctx.accounts.commitment;
     require!(
         commitment.side == market.outcome,
         KrnError::OutcomeMismatch

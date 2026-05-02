@@ -191,7 +191,7 @@ describe("krn-comprehensive", () => {
       await program.methods
         .claimWinning(marketId, PROOF_NULLIFIER, {
           proofA: PROOF_A, proofB: PROOF_B, proofC: PROOF_C,
-          publicInputs: [marketId, Array(31).fill(0).concat([1]), PROOF_NULLIFIER, Array(32).fill(0xBB)],
+          publicInputs: [marketId, Array(31).fill(0).concat([1]), PROOF_NULLIFIER, Array(32).fill(0xBB), Array(32).fill(0)],
         })
         .accounts({
           market: marketPda, commitment: commitPda, nullifierAccount: nullPda,
@@ -295,7 +295,7 @@ describe("krn-comprehensive", () => {
       await program.methods
         .claimWinning(marketId, PROOF_NULLIFIER, {
           proofA: PROOF_A, proofB: PROOF_B, proofC: PROOF_C,
-          publicInputs: [marketId, Array(31).fill(0).concat([1]), PROOF_NULLIFIER, PROOF_COMMITMENT_ROOT],
+          publicInputs: [marketId, Array(31).fill(0).concat([1]), PROOF_NULLIFIER, PROOF_COMMITMENT_ROOT, Array(32).fill(0)],
         })
         .accounts({
           market: marketPda, commitment: commitPda, nullifierAccount: nullPda,

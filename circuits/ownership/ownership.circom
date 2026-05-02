@@ -13,10 +13,10 @@ include "node_modules/circomlib/circuits/mux1.circom";
 ///   - resolved_outcome: the winning outcome (0=NO, 1=YES)
 ///   - nullifier: unique hash to prevent double-claiming
 ///   - commitment_root: Merkle root of all commitments (simplified for PoC)
+///   - amount: bet amount (public to prevent commitment decoupling)
 ///
 /// Private inputs (witnesses):
 ///   - secret_nonce: random nonce used when placing bet
-///   - amount: bet amount
 ///   - original_pubkey: pubkey used when placing bet (field element)
 ///   - sibling: Merkle sibling for inclusion proof (simplified single-level)
 ///   - direction: 0 or 1 for Merkle path direction
@@ -27,10 +27,10 @@ template OwnershipProof() {
     signal input resolved_outcome;
     signal input nullifier;
     signal input commitment_root;
+    signal input amount;
 
     // Private inputs
     signal input secret_nonce;
-    signal input amount;
     signal input original_pubkey;
     signal input sibling;
     signal input direction;
@@ -51,6 +51,9 @@ template OwnershipProof() {
     // In production, this would be a full Merkle tree with multiple levels
     component merkleLeft = Poseidon(2);
     component merkleRight = Poseidon(2);
+
+    // Constrain direction to be boolean (0 or 1) to prevent forgery
+    direction * (1 - direction) === 0;
 
     // If direction == 0: hash(commitment, sibling)
     // If direction == 1: hash(sibling, commitment)
@@ -81,4 +84,4 @@ template OwnershipProof() {
     resolved_outcome * (1 - resolved_outcome) === 0;
 }
 
-component main {public [market_id, resolved_outcome, nullifier, commitment_root]} = OwnershipProof();
+component main {public [market_id, resolved_outcome, nullifier, commitment_root, amount]} = OwnershipProof();
