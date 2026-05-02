@@ -88,7 +88,7 @@ pub struct ClaimWinning<'info> {
         seeds = [b"market", market_id.as_ref()],
         bump = market.bump,
     )]
-    pub market: Account<'info, MarketAccount>,
+    pub market: Box<Account<'info, MarketAccount>>,
 
     #[account(
         seeds = [b"commitment", market_id.as_ref(), claimer.key().as_ref()],

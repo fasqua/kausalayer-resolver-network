@@ -31,11 +31,10 @@ pub mod krn {
         ctx: Context<PlaceBet>,
         market_id: [u8; 32],
         commitment_hash: [u8; 32],
-        commitment_root: [u8; 32],
         side: u8,
         amount: u64,
     ) -> Result<()> {
-        instructions::place_bet::handle_place_bet(ctx, market_id, commitment_hash, commitment_root, side, amount)
+        instructions::place_bet::handle_place_bet(ctx, market_id, commitment_hash, side, amount)
     }
 
     pub fn close_market(ctx: Context<CloseMarket>) -> Result<()> {

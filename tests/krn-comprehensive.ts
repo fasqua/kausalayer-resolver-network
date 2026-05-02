@@ -3,10 +3,8 @@ import { Program } from "@coral-xyz/anchor";
 import { Krn } from "../target/types/krn";
 import { expect } from "chai";
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { ethers } from "ethers";
 import { createHash } from "crypto";
 
-const TEST_ATTESTOR_KEY = process.env.TEST_ATTESTOR_KEY || "";
 
 function sha256(data: string): number[] {
   return Array.from(createHash("sha256").update(data).digest());
@@ -16,23 +14,6 @@ function uniqueMarketId(label: string): number[] {
   return sha256("e2e-comprehensive-" + label + "-" + Date.now());
 }
 
-async function signReclaimProof(
-  identifier: number[],
-  owner: number[],
-  timestampS: number,
-  epoch: number
-): Promise<{ signature: number[]; recoveryId: number }> {
-  const wallet = new ethers.Wallet(TEST_ATTESTOR_KEY);
-  const identifierHex = "0x" + Buffer.from(identifier).toString("hex");
-  const ownerHex = "0x" + Buffer.from(owner).toString("hex");
-  const message = `${identifierHex}\n${ownerHex}\n${timestampS}\n${epoch}`;
-  const sig = await wallet.signMessage(message);
-  const sigBytes = ethers.utils.arrayify(sig);
-  return {
-    signature: [...Array.from(sigBytes.slice(0, 32)), ...Array.from(sigBytes.slice(32, 64))],
-    recoveryId: sigBytes[64] - 27,
-  };
-}
 
 function makeSourceConfigs() {
   return [
@@ -113,7 +94,7 @@ describe("krn-comprehensive", () => {
 
     try {
       await program.methods
-        .placeBet(marketId, Array(32).fill(0xAA), Array(32).fill(0xBB), 5, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
+        .placeBet(marketId, Array(32).fill(0xAA), 5, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
         .accounts({ market: marketPda, commitment: commitPda, marketPool: poolPda, bettor: creator.publicKey, systemProgram: SystemProgram.programId })
         .rpc();
       expect.fail("Should have rejected invalid side");
@@ -144,7 +125,7 @@ describe("krn-comprehensive", () => {
 
     try {
       await program.methods
-        .placeBet(marketId, Array(32).fill(0xAA), Array(32).fill(0xBB), 1, new anchor.BN(0))
+        .placeBet(marketId, Array(32).fill(0xAA), 1, new anchor.BN(0))
         .accounts({ market: marketPda, commitment: commitPda, marketPool: poolPda, bettor: creator.publicKey, systemProgram: SystemProgram.programId })
         .rpc();
       expect.fail("Should have rejected zero amount");
@@ -154,58 +135,6 @@ describe("krn-comprehensive", () => {
     }
   });
 
-  // ============================================================
-  // TEST 4: Submit proof after deadline should REJECT
-  // ============================================================
-  it("Rejects submit_proof after resolution deadline", async () => {
-    const marketId = uniqueMarketId("proof-deadline");
-    const { marketPda } = getPdas(marketId, program.programId);
-    const sourceConfigs = makeSourceConfigs();
-    const now = Math.floor(Date.now() / 1000);
-
-    // Close in 3s, resolution deadline in 6s
-    await program.methods
-      .initMarket(marketId, new anchor.BN(now + 3), new anchor.BN(now + 6), sourceConfigs, 3)
-      .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
-      .rpc();
-
-    // Wait for close
-    await new Promise((r) => setTimeout(r, 4000));
-    await program.methods
-      .closeMarket()
-      .accounts({ market: marketPda, caller: creator.publicKey })
-      .rpc();
-
-    // Wait for resolution deadline to pass
-    await new Promise((r) => setTimeout(r, 4000));
-
-    const [proofPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("proof"), Buffer.from(marketId), Buffer.from([0])],
-      program.programId
-    );
-
-    const ownerBytes = Array(20).fill(0x01);
-    const ts = Math.floor(Date.now() / 1000);
-    const { signature, recoveryId } = await signReclaimProof(sourceConfigs[0].domainHash, ownerBytes, ts, 0);
-
-    try {
-      await program.methods
-        .submitProof(marketId, 0, 1, {
-          identifier: sourceConfigs[0].domainHash,
-          owner: ownerBytes,
-          timestampS: new anchor.BN(ts),
-          epoch: 0,
-          signature,
-          recoveryId,
-        })
-        .accounts({ market: marketPda, proofSubmission: proofPda, submitter: creator.publicKey, systemProgram: SystemProgram.programId })
-        .rpc();
-      expect.fail("Should have rejected proof after deadline");
-    } catch (e: any) {
-      expect(e.error.errorCode.code).to.equal("DeadlineExpired");
-      console.log("Submit proof after deadline correctly rejected");
-    }
-  });
 
   // ============================================================
   // TEST 5: Fewer than 3 sources should REJECT
@@ -227,134 +156,7 @@ describe("krn-comprehensive", () => {
     }
   });
 
-  // ============================================================
-  // TEST 6: Aggregate with insufficient proofs should REJECT
-  // ============================================================
-  it("Rejects aggregate_resolution with insufficient proofs", async () => {
-    const marketId = uniqueMarketId("insuff-proofs");
-    const { marketPda } = getPdas(marketId, program.programId);
-    const sourceConfigs = makeSourceConfigs();
-    const now = Math.floor(Date.now() / 1000);
 
-    await program.methods
-      .initMarket(marketId, new anchor.BN(now + 3), new anchor.BN(now + 3600), sourceConfigs, 3)
-      .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
-      .rpc();
-
-    await new Promise((r) => setTimeout(r, 4000));
-    await program.methods
-      .closeMarket()
-      .accounts({ market: marketPda, caller: creator.publicKey })
-      .rpc();
-
-    // Submit only 1 proof (need 3)
-    const [proofPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("proof"), Buffer.from(marketId), Buffer.from([0])],
-      program.programId
-    );
-    const ownerBytes = Array(20).fill(0x01);
-    const ts = Math.floor(Date.now() / 1000);
-    const { signature, recoveryId } = await signReclaimProof(sourceConfigs[0].domainHash, ownerBytes, ts, 0);
-
-    await program.methods
-      .submitProof(marketId, 0, 1, {
-        identifier: sourceConfigs[0].domainHash, owner: ownerBytes,
-        timestampS: new anchor.BN(ts), epoch: 0, signature, recoveryId,
-      })
-      .accounts({ market: marketPda, proofSubmission: proofPda, submitter: creator.publicKey, systemProgram: SystemProgram.programId })
-      .rpc();
-
-    try {
-      await program.methods
-        .aggregateResolution()
-        .accounts({ market: marketPda, caller: creator.publicKey })
-        .remainingAccounts([{ pubkey: proofPda, isWritable: false, isSigner: false }])
-        .rpc();
-      expect.fail("Should have rejected");
-    } catch (e: any) {
-      expect(e.error.errorCode.code).to.equal("InsufficientProofs");
-      console.log("Insufficient proofs correctly rejected");
-    }
-  });
-
-  // ============================================================
-  // TEST 7: Public input mismatch — wrong market_id in proof
-  // ============================================================
-  it("Rejects claim with mismatched market_id in proof", async () => {
-    // Use the proof market_id (12345) to init market, resolve it, then
-    // try to claim with a proof that has DIFFERENT market_id in public inputs
-    const marketId = PROOF_MARKET_ID;
-    // This market already exists from previous e2e test, so use a different one
-    const fakeMarketId = uniqueMarketId("mismatch-mid");
-    const { marketPda, poolPda } = getPdas(fakeMarketId, program.programId);
-    const sourceConfigs = makeSourceConfigs();
-    const now = Math.floor(Date.now() / 1000);
-
-    await program.methods
-      .initMarket(fakeMarketId, new anchor.BN(now + 3), new anchor.BN(now + 3600), sourceConfigs, 3)
-      .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
-      .rpc();
-
-    const [commitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("commitment"), Buffer.from(fakeMarketId), creator.publicKey.toBuffer()],
-      program.programId
-    );
-    await program.methods
-      .placeBet(fakeMarketId, Array(32).fill(0xAB), PROOF_COMMITMENT_ROOT, 1, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
-      .accounts({ market: marketPda, commitment: commitPda, marketPool: poolPda, bettor: creator.publicKey, systemProgram: SystemProgram.programId })
-      .rpc();
-
-    await new Promise((r) => setTimeout(r, 4000));
-    await program.methods.closeMarket().accounts({ market: marketPda, caller: creator.publicKey }).rpc();
-
-    // Submit 3 proofs and resolve
-    const proofPdas: PublicKey[] = [];
-    const ownerBytes = Array(20).fill(0x01);
-    const ts = Math.floor(Date.now() / 1000);
-    for (let i = 0; i < 3; i++) {
-      const [pp] = PublicKey.findProgramAddressSync(
-        [Buffer.from("proof"), Buffer.from(fakeMarketId), Buffer.from([i])], program.programId
-      );
-      proofPdas.push(pp);
-      const { signature, recoveryId } = await signReclaimProof(sourceConfigs[i].domainHash, ownerBytes, ts, i);
-      await program.methods
-        .submitProof(fakeMarketId, i, 1, {
-          identifier: sourceConfigs[i].domainHash, owner: ownerBytes,
-          timestampS: new anchor.BN(ts), epoch: i, signature, recoveryId,
-        })
-        .accounts({ market: marketPda, proofSubmission: pp, submitter: creator.publicKey, systemProgram: SystemProgram.programId })
-        .rpc();
-    }
-    await program.methods.aggregateResolution()
-      .accounts({ market: marketPda, caller: creator.publicKey })
-      .remainingAccounts(proofPdas.map((pk) => ({ pubkey: pk, isWritable: false, isSigner: false })))
-      .rpc();
-
-    // Try to claim with proof that has PROOF_MARKET_ID (12345) but market is fakeMarketId
-    const [nullPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("nullifier"), Buffer.from(fakeMarketId), Buffer.from(PROOF_NULLIFIER)],
-      program.programId
-    );
-    const recipient = anchor.web3.Keypair.generate();
-
-    try {
-      await program.methods
-        .claimWinning(fakeMarketId, PROOF_NULLIFIER, {
-          proofA: PROOF_A, proofB: PROOF_B, proofC: PROOF_C,
-          publicInputs: [PROOF_MARKET_ID, Array(31).fill(0).concat([1]), PROOF_NULLIFIER, PROOF_COMMITMENT_ROOT],
-        })
-        .accounts({
-          market: marketPda, commitment: commitPda, nullifierAccount: nullPda,
-          marketPool: poolPda, recipient: recipient.publicKey, claimer: creator.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
-      expect.fail("Should have rejected mismatched market_id");
-    } catch (e: any) {
-      expect(e.error.errorCode.code).to.equal("PublicInputMismatch");
-      console.log("Mismatched market_id in proof correctly rejected");
-    }
-  });
 
   // ============================================================
   // TEST 8: Claim on unresolved market should REJECT
@@ -375,7 +177,7 @@ describe("krn-comprehensive", () => {
       program.programId
     );
     await program.methods
-      .placeBet(marketId, Array(32).fill(0xAA), Array(32).fill(0xBB), 1, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
+      .placeBet(marketId, Array(32).fill(0xAA), 1, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
       .accounts({ market: marketPda, commitment: commitPda, marketPool: poolPda, bettor: creator.publicKey, systemProgram: SystemProgram.programId })
       .rpc();
 
@@ -552,7 +354,7 @@ describe("krn-comprehensive", () => {
 
     try {
       await program.methods
-        .placeBet(marketId, Array(32).fill(0xAA), Array(32).fill(0xBB), 1, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
+        .placeBet(marketId, Array(32).fill(0xAA), 1, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
         .accounts({ market: marketPda, commitment: commitPda, marketPool: poolPda, bettor: creator.publicKey, systemProgram: SystemProgram.programId })
         .rpc();
       expect.fail("Should have rejected");

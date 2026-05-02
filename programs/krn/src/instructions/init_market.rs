@@ -46,6 +46,8 @@ pub fn handle_init_market(
     market.source_configs = configs;
 
     market.commitment_root = [0u8; 32];
+    market.commitment_count = 0;
+    market.commitment_tree = [[0u8; 32]; 10];
     market.total_pool = 0;
     market.yes_pool = 0;
     market.no_pool = 0;

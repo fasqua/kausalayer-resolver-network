@@ -40,4 +40,6 @@ pub enum KrnError {
     ZeroBetAmount,
     #[msg("Unauthorized caller")]
     Unauthorized,
+    #[msg("Merkle tree is full (max 1024 bets per market)")]
+    MerkleTreeFull,
 }

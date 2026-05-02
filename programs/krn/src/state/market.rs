@@ -51,8 +51,12 @@ pub struct MarketAccount {
     pub num_sources: u8,
     /// Source configurations (max 10)
     pub source_configs: [SourceConfig; 10],
-    /// Merkle root of all bet commitments
+    /// Merkle root of all bet commitments (computed on-chain)
     pub commitment_root: [u8; 32],
+    /// Number of commitments inserted into the Merkle tree
+    pub commitment_count: u32,
+    /// Incremental Merkle tree: hash at each level (depth 10, max 1024 bets)
+    pub commitment_tree: [[u8; 32]; 10],
     /// Total funds in market pool (lamports)
     pub total_pool: u64,
     /// Funds in YES pool (lamports)
@@ -70,9 +74,9 @@ pub struct MarketAccount {
 impl MarketAccount {
     /// Account size in bytes.
     /// 8 (discriminator) + 32 + 32 + 8 + 8 + 1 + 1 + 1 + 1 + 1
-    /// + (96 * 10) + 32 + 8 + 8 + 8 + 2 + 32 + 1 = 1144
+    /// + (96 * 10) + 32 + 4 + (32 * 10) + 8 + 8 + 8 + 2 + 32 + 1 = 1468
     pub const SIZE: usize = 8 + 32 + 32 + 8 + 8 + 1 + 1 + 1 + 1 + 1
-        + (96 * 10) + 32 + 8 + 8 + 8 + 2 + 32 + 1;
+        + (96 * 10) + 32 + 4 + (32 * 10) + 8 + 8 + 8 + 2 + 32 + 1;
 
     pub const OUTCOME_UNRESOLVED: u8 = 255;
     pub const OUTCOME_NO: u8 = 0;

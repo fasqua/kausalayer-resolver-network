@@ -1,14 +1,72 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
+use solana_sha256_hasher::hashv as sha256;
 use crate::state::*;
 use crate::errors::KrnError;
 
+/// Depth of the incremental Merkle tree (max 2^10 = 1024 bets per market).
+const TREE_DEPTH: usize = 10;
+
+/// Pre-computed zero hashes for each level of the Merkle tree.
+/// ZERO_HASHES[0] = [0u8; 32]
+/// ZERO_HASHES[n] = sha256(ZERO_HASHES[n-1], ZERO_HASHES[n-1])
+/// Computed at compile time is ideal, but Solana doesn't support const fn sha256.
+/// Instead we compute them at runtime (cheap: 16 hashes, only during place_bet).
+fn compute_zero_hashes() -> [[u8; 32]; TREE_DEPTH] {
+    let mut zeros = [[0u8; 32]; TREE_DEPTH];
+    // zeros[0] is already [0u8; 32] (empty leaf)
+    for i in 1..TREE_DEPTH {
+        let h = sha256(&[&zeros[i - 1], &zeros[i - 1]]);
+        zeros[i] = h.to_bytes();
+    }
+    zeros
+}
+
+/// Inserts a leaf into the incremental Merkle tree and returns the new root.
+/// This follows the standard append-only incremental Merkle tree pattern
+/// used by Tornado Cash, Semaphore, and other production ZK protocols.
+///
+/// Algorithm:
+/// - Start with current_hash = leaf
+/// - At each level, check if the current index is even or odd at that level
+/// - If even: store current_hash in tree[level], pair with zero_hash
+/// - If odd: pair with tree[level] (the previously stored sibling)
+/// - Move up until root
+fn insert_leaf(
+    tree: &mut [[u8; 32]; TREE_DEPTH],
+    leaf: [u8; 32],
+    index: u32,
+) -> [u8; 32] {
+    let zero_hashes = compute_zero_hashes();
+    let mut current_hash = leaf;
+    let mut current_index = index;
+
+    for level in 0..TREE_DEPTH {
+        if current_index % 2 == 0 {
+            // Even index: this node is a left child
+            // Store it for future right sibling pairing
+            tree[level] = current_hash;
+            // Pair with zero hash (right sibling doesn't exist yet)
+            let h = sha256(&[&current_hash, &zero_hashes[level]]);
+            current_hash = h.to_bytes();
+        } else {
+            // Odd index: this node is a right child
+            // Pair with the stored left sibling
+            let h = sha256(&[&tree[level], &current_hash]);
+            current_hash = h.to_bytes();
+        }
+        current_index /= 2;
+    }
+
+    current_hash
+}
+
 /// Places a bet on a market with a commitment hash for privacy.
+/// The commitment root is computed on-chain using an incremental Merkle tree.
 pub fn handle_place_bet(
     ctx: Context<PlaceBet>,
     _market_id: [u8; 32],
     commitment_hash: [u8; 32],
-    commitment_root: [u8; 32],
     side: u8,
     amount: u64,
 ) -> Result<()> {
@@ -20,6 +78,12 @@ pub fn handle_place_bet(
 
     let market = &mut ctx.accounts.market;
     require!(market.state == MarketState::Open, KrnError::InvalidMarketState);
+
+    // Check tree capacity (max 2^16 = 65536 bets)
+    require!(
+        market.commitment_count < (1u32 << TREE_DEPTH),
+        KrnError::MerkleTreeFull
+    );
 
     // Transfer SOL from bettor to market pool
     system_program::transfer(
@@ -50,10 +114,17 @@ pub fn handle_place_bet(
     commitment.claimed = false;
     commitment.bump = ctx.bumps.commitment;
 
-    // Update market commitment root (client computes Merkle root off-chain)
-    market.commitment_root = commitment_root;
+    // Insert commitment into on-chain incremental Merkle tree
+    let leaf_index = market.commitment_count;
+    let new_root = insert_leaf(
+        &mut market.commitment_tree,
+        commitment_hash,
+        leaf_index,
+    );
+    market.commitment_root = new_root;
+    market.commitment_count += 1;
 
-    msg!("Bet placed: side={}, amount={}", side, amount);
+    msg!("Bet placed: side={}, amount={}, leaf_index={}", side, amount, leaf_index);
     Ok(())
 }
 
