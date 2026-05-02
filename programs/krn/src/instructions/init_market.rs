@@ -11,6 +11,8 @@ pub fn handle_init_market(
     resolution_deadline: i64,
     source_configs: Vec<SourceConfig>,
     required_sources: u8,
+    threshold: u64,
+    comparison: u8,
 ) -> Result<()> {
     require!(
         source_configs.len() >= required_sources as usize,
@@ -53,6 +55,8 @@ pub fn handle_init_market(
     market.no_pool = 0;
     market.nullifier_count = 0;
     market.authority = ctx.accounts.creator.key();
+    market.threshold = threshold;
+    market.comparison = comparison;
     market.bump = ctx.bumps.market;
 
     msg!("Market initialized: {:?}", market_id);

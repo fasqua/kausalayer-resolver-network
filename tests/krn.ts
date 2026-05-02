@@ -62,7 +62,9 @@ describe("krn", () => {
         closeTimestamp,
         resolutionDeadline,
         sourceConfigs,
-        3
+        3,
+        new anchor.BN(100000),
+        0
       )
       .accounts({
         market: marketPda,
@@ -188,7 +190,9 @@ describe("krn", () => {
           closeTimestamp,
           resolutionDeadline,
           twoSources,
-          3
+          3,
+          new anchor.BN(100000),
+          0
         )
         .accounts({
           market: badMarketPda,

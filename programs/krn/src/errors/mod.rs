@@ -42,4 +42,6 @@ pub enum KrnError {
     Unauthorized,
     #[msg("Merkle tree is full (max 1024 bets per market)")]
     MerkleTreeFull,
+    #[msg("Proof threshold or comparison does not match market config")]
+    ThresholdMismatch,
 }

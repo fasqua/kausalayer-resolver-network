@@ -20,10 +20,13 @@ pub mod krn {
         resolution_deadline: i64,
         source_configs: Vec<SourceConfig>,
         required_sources: u8,
+        threshold: u64,
+        comparison: u8,
     ) -> Result<()> {
         instructions::init_market::handle_init_market(
             ctx, market_id, close_timestamp,
             resolution_deadline, source_configs, required_sources,
+            threshold, comparison,
         )
     }
 
@@ -45,10 +48,9 @@ pub mod krn {
         ctx: Context<SubmitProof>,
         market_id: [u8; 32],
         source_index: u8,
-        claimed_outcome: u8,
-        reclaim_proof: ReclaimProof,
+        sp1_proof: SP1ZkTlsProofData,
     ) -> Result<()> {
-        instructions::submit_proof::handle_submit_proof(ctx, market_id, source_index, claimed_outcome, reclaim_proof)
+        instructions::submit_proof::handle_submit_proof(ctx, market_id, source_index, sp1_proof)
     }
 
     pub fn aggregate_resolution(ctx: Context<AggregateResolution>) -> Result<()> {
@@ -78,14 +80,4 @@ pub mod krn {
         instructions::refund_market::handle_refund_market(ctx, market_id)
     }
 
-    pub fn verify_sp1_zktls(
-        _ctx: Context<VerifySp1ZkTls>,
-        proof_data: SP1ZkTlsProofData,
-    ) -> Result<()> {
-        instructions::sp1_verifier::verify_sp1_zktls_proof(&proof_data)?;
-        msg!("SP1 zkTLS proof verified on-chain");
-        msg!("Public values: {} bytes", proof_data.public_values.len());
-        msg!("Proof: {} bytes", proof_data.proof.len());
-        Ok(())
-    }
 }

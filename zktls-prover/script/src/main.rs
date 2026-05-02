@@ -15,10 +15,13 @@ async fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let input_path = args.get(1).map(|s| s.as_str()).unwrap_or("../testdata/input.json");
     let mode = args.get(2).map(|s| s.as_str()).unwrap_or("record-and-mock");
+    let threshold: u64 = args.get(3).map(|s| s.parse().expect("Invalid threshold")).unwrap_or(100000);
+    let comparison: u8 = args.get(4).map(|s| s.parse().expect("Invalid comparison")).unwrap_or(0);
 
     println!("KRN zkTLS Prover (SP1 v6)");
     println!("Mode: {}", mode);
     println!("Input: {}", input_path);
+    println!("Threshold: {}, Comparison: {} (0=gt, 1=lt, 2=eq)", threshold, comparison);
 
     let request_json = fs::read_to_string(input_path)?;
     let request: Request = serde_json::from_str(&request_json)?;
@@ -62,6 +65,8 @@ async fn main() -> Result<()> {
 
         let mut stdin = SP1Stdin::new();
         stdin.write_vec(input_bytes);
+        stdin.write(&threshold);
+        stdin.write(&comparison);
 
         let start = std::time::Instant::now();
         let proof = client

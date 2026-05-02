@@ -57,7 +57,7 @@ describe("krn-comprehensive", () => {
     const now = Math.floor(Date.now() / 1000);
 
     await program.methods
-      .initMarket(marketId, new anchor.BN(now + 3600), new anchor.BN(now + 7200), sourceConfigs, 3)
+      .initMarket(marketId, new anchor.BN(now + 3600), new anchor.BN(now + 7200), sourceConfigs, 3, new anchor.BN(100000), 0)
       .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
       .rpc();
 
@@ -83,7 +83,7 @@ describe("krn-comprehensive", () => {
     const now = Math.floor(Date.now() / 1000);
 
     await program.methods
-      .initMarket(marketId, new anchor.BN(now + 3600), new anchor.BN(now + 7200), sourceConfigs, 3)
+      .initMarket(marketId, new anchor.BN(now + 3600), new anchor.BN(now + 7200), sourceConfigs, 3, new anchor.BN(100000), 0)
       .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
       .rpc();
 
@@ -114,7 +114,7 @@ describe("krn-comprehensive", () => {
     const now = Math.floor(Date.now() / 1000);
 
     await program.methods
-      .initMarket(marketId, new anchor.BN(now + 3600), new anchor.BN(now + 7200), sourceConfigs, 3)
+      .initMarket(marketId, new anchor.BN(now + 3600), new anchor.BN(now + 7200), sourceConfigs, 3, new anchor.BN(100000), 0)
       .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
       .rpc();
 
@@ -146,7 +146,7 @@ describe("krn-comprehensive", () => {
 
     try {
       await program.methods
-        .initMarket(marketId, new anchor.BN(now + 3600), new anchor.BN(now + 7200), makeSourceConfigs().slice(0, 2), 2)
+        .initMarket(marketId, new anchor.BN(now + 3600), new anchor.BN(now + 7200), makeSourceConfigs().slice(0, 2), 2, new anchor.BN(100000), 0)
         .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
         .rpc();
       expect.fail("Should have rejected");
@@ -168,7 +168,7 @@ describe("krn-comprehensive", () => {
     const now = Math.floor(Date.now() / 1000);
 
     await program.methods
-      .initMarket(marketId, new anchor.BN(now + 3600), new anchor.BN(now + 7200), sourceConfigs, 3)
+      .initMarket(marketId, new anchor.BN(now + 3600), new anchor.BN(now + 7200), sourceConfigs, 3, new anchor.BN(100000), 0)
       .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
       .rpc();
 
@@ -217,7 +217,7 @@ describe("krn-comprehensive", () => {
 
     // Close in 3s, deadline in 6s
     await program.methods
-      .initMarket(marketId, new anchor.BN(now + 3), new anchor.BN(now + 6), sourceConfigs, 3)
+      .initMarket(marketId, new anchor.BN(now + 3), new anchor.BN(now + 6), sourceConfigs, 3, new anchor.BN(100000), 0)
       .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
       .rpc();
 
@@ -252,7 +252,7 @@ describe("krn-comprehensive", () => {
     const now = Math.floor(Date.now() / 1000);
 
     await program.methods
-      .initMarket(marketId, new anchor.BN(now + 3), new anchor.BN(now + 6), sourceConfigs, 3)
+      .initMarket(marketId, new anchor.BN(now + 3), new anchor.BN(now + 6), sourceConfigs, 3, new anchor.BN(100000), 0)
       .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
       .rpc();
 
@@ -320,7 +320,7 @@ describe("krn-comprehensive", () => {
 
     try {
       await program.methods
-        .initMarket(marketId, new anchor.BN(now + 7200), new anchor.BN(now + 3600), makeSourceConfigs(), 3)
+        .initMarket(marketId, new anchor.BN(now + 7200), new anchor.BN(now + 3600), makeSourceConfigs(), 3, new anchor.BN(100000), 0)
         .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
         .rpc();
       expect.fail("Should have rejected");
@@ -340,7 +340,7 @@ describe("krn-comprehensive", () => {
     const now = Math.floor(Date.now() / 1000);
 
     await program.methods
-      .initMarket(marketId, new anchor.BN(now + 3), new anchor.BN(now + 3600), sourceConfigs, 3)
+      .initMarket(marketId, new anchor.BN(now + 3), new anchor.BN(now + 3600), sourceConfigs, 3, new anchor.BN(100000), 0)
       .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
       .rpc();
 

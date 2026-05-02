@@ -67,6 +67,10 @@ pub struct MarketAccount {
     pub nullifier_count: u16,
     /// Authority for fallback resolution
     pub authority: Pubkey,
+    /// Price threshold for market resolution (e.g., 100000 for BTC > 100k)
+    pub threshold: u64,
+    /// Comparison type: 0=greater_than, 1=less_than, 2=equal
+    pub comparison: u8,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -74,9 +78,9 @@ pub struct MarketAccount {
 impl MarketAccount {
     /// Account size in bytes.
     /// 8 (discriminator) + 32 + 32 + 8 + 8 + 1 + 1 + 1 + 1 + 1
-    /// + (96 * 10) + 32 + 4 + (32 * 10) + 8 + 8 + 8 + 2 + 32 + 1 = 1468
+    /// + (96 * 10) + 32 + 4 + (32 * 10) + 8 + 8 + 8 + 2 + 32 + 8 + 1 + 1 = 1477
     pub const SIZE: usize = 8 + 32 + 32 + 8 + 8 + 1 + 1 + 1 + 1 + 1
-        + (96 * 10) + 32 + 4 + (32 * 10) + 8 + 8 + 8 + 2 + 32 + 1;
+        + (96 * 10) + 32 + 4 + (32 * 10) + 8 + 8 + 8 + 2 + 32 + 8 + 1 + 1;
 
     pub const OUTCOME_UNRESOLVED: u8 = 255;
     pub const OUTCOME_NO: u8 = 0;

@@ -27,7 +27,7 @@ const SP1_V6_VK_ROOT: [u8; 32] = [
 
 /// KRN zkTLS program vkey hash
 pub const KRN_ZKTLS_VKEY_HASH: &str =
-    "0x00831d20e77bb59452467104f52e8eda4ea3f2ce957e9e65cbd495e656354ec9";
+    "0x00a52ad84180de09af0c46fdcc8396cd2ac13d73ba6df52ca7e59f29dcb8a9e4";
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct SP1ZkTlsProofData {
@@ -229,8 +229,3 @@ fn decode_vkey_hash(vkey_hex: &str) -> Result<[u8; 32]> {
     Ok(result)
 }
 
-#[derive(Accounts)]
-pub struct VerifySp1ZkTls<'info> {
-    #[account(mut)]
-    pub caller: Signer<'info>,
-}
