@@ -4,13 +4,30 @@ import { Krn } from "../target/types/krn";
 import { expect } from "chai";
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { createHash } from "crypto";
+import { buildPoseidon } from "circomlibjs";
 
 function sha256(data: string): number[] {
   const hash = createHash("sha256").update(data).digest();
   return Array.from(hash);
 }
 
+let poseidonHasher: any;
+
+function poseidonHash(inputs: bigint[]): number[] {
+  const hash = poseidonHasher(inputs);
+  const hashBigInt = poseidonHasher.F.toObject(hash);
+  const hex = hashBigInt.toString(16).padStart(64, "0");
+  const bytes: number[] = [];
+  for (let i = 0; i < 64; i += 2) {
+    bytes.push(parseInt(hex.substring(i, i + 2), 16));
+  }
+  return bytes;
+}
+
 describe("krn", () => {
+  before(async () => {
+    poseidonHasher = await buildPoseidon();
+  });
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
@@ -92,7 +109,7 @@ describe("krn", () => {
 
   it("Places a YES bet", async () => {
     const betAmount = new anchor.BN(0.5 * LAMPORTS_PER_SOL);
-    const commitmentHash = sha256("secret-nonce-bettor1-yes");
+    const commitmentHash = poseidonHash([BigInt(12345), BigInt(1), BigInt(500000000), BigInt(98765432101234567890n), BigInt(11111111111111111111n)]);
     const side = 1; // YES
 
     const [commitmentPda] = PublicKey.findProgramAddressSync(
@@ -134,7 +151,7 @@ describe("krn", () => {
 
   it("Rejects bet with invalid side", async () => {
     const betAmount = new anchor.BN(0.1 * LAMPORTS_PER_SOL);
-    const commitmentHash = sha256("secret-nonce-invalid");
+    const commitmentHash = poseidonHash([BigInt(99999), BigInt(0), BigInt(100000000), BigInt(12345678901234567890n), BigInt(22222222222222222222n)]);
     const invalidSide = 5;
 
     const newBettor = anchor.web3.Keypair.generate();

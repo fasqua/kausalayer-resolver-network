@@ -30,6 +30,7 @@ ark-bn254 = "0.4.0"
 ark-ff = "0.4.0"
 ark-serialize = "0.4.0"
 sha2 = "0.10"
+solana-poseidon = "2"
 # sp1-solana removed - using custom SP1 v6 verifier in sp1_verifier.rs
 
 [lints.rust]

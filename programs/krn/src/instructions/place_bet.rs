@@ -1,30 +1,38 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
-use solana_sha256_hasher::hashv as sha256;
+use solana_poseidon::{hashv as poseidon_hashv, Parameters, Endianness};
 use crate::state::*;
 use crate::errors::KrnError;
 
 /// Depth of the incremental Merkle tree (max 2^10 = 1024 bets per market).
 const TREE_DEPTH: usize = 10;
 
+/// Compute Poseidon hash of two 32-byte inputs via native Solana syscall.
+/// Uses BN254 curve, big-endian (matches circomlib Poseidon(2)).
+fn poseidon_hash_two(left: &[u8; 32], right: &[u8; 32]) -> [u8; 32] {
+    let hash = poseidon_hashv(
+        Parameters::Bn254X5,
+        Endianness::BigEndian,
+        &[left.as_ref(), right.as_ref()],
+    ).unwrap();
+    hash.to_bytes()
+}
+
 /// Pre-computed zero hashes for each level of the Merkle tree.
 /// ZERO_HASHES[0] = [0u8; 32]
-/// ZERO_HASHES[n] = sha256(ZERO_HASHES[n-1], ZERO_HASHES[n-1])
-/// Computed at compile time is ideal, but Solana doesn't support const fn sha256.
-/// Instead we compute them at runtime (cheap: 16 hashes, only during place_bet).
+/// ZERO_HASHES[n] = Poseidon(ZERO_HASHES[n-1], ZERO_HASHES[n-1])
 fn compute_zero_hashes() -> [[u8; 32]; TREE_DEPTH] {
     let mut zeros = [[0u8; 32]; TREE_DEPTH];
-    // zeros[0] is already [0u8; 32] (empty leaf)
     for i in 1..TREE_DEPTH {
-        let h = sha256(&[&zeros[i - 1], &zeros[i - 1]]);
-        zeros[i] = h.to_bytes();
+        zeros[i] = poseidon_hash_two(&zeros[i - 1], &zeros[i - 1]);
     }
     zeros
 }
 
 /// Inserts a leaf into the incremental Merkle tree and returns the new root.
 /// This follows the standard append-only incremental Merkle tree pattern
-/// used by Tornado Cash, Semaphore, and other production ZK protocols.
+/// Uses Poseidon hash via native Solana syscall (no stack overflow).
+/// Matches circomlib Poseidon(2) used in ownership.circom.
 ///
 /// Algorithm:
 /// - Start with current_hash = leaf
@@ -47,13 +55,11 @@ fn insert_leaf(
             // Store it for future right sibling pairing
             tree[level] = current_hash;
             // Pair with zero hash (right sibling doesn't exist yet)
-            let h = sha256(&[&current_hash, &zero_hashes[level]]);
-            current_hash = h.to_bytes();
+            current_hash = poseidon_hash_two(&current_hash, &zero_hashes[level]);
         } else {
             // Odd index: this node is a right child
             // Pair with the stored left sibling
-            let h = sha256(&[&tree[level], &current_hash]);
-            current_hash = h.to_bytes();
+            current_hash = poseidon_hash_two(&tree[level], &current_hash);
         }
         current_index /= 2;
     }
@@ -62,7 +68,7 @@ fn insert_leaf(
 }
 
 /// Places a bet on a market with a commitment hash for privacy.
-/// The commitment root is computed on-chain using an incremental Merkle tree.
+/// The commitment root is computed on-chain using an incremental Poseidon Merkle tree.
 pub fn handle_place_bet(
     ctx: Context<PlaceBet>,
     _market_id: [u8; 32],
@@ -160,3 +166,4 @@ pub struct PlaceBet<'info> {
 
     pub system_program: Program<'info, System>,
 }
+

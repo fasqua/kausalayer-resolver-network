@@ -94,7 +94,7 @@ describe("krn-comprehensive", () => {
 
     try {
       await program.methods
-        .placeBet(marketId, Array(32).fill(0xAA), 5, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
+        .placeBet(marketId, Array(32).fill(0x01), 5, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
         .accounts({ market: marketPda, commitment: commitPda, marketPool: poolPda, bettor: creator.publicKey, systemProgram: SystemProgram.programId })
         .rpc();
       expect.fail("Should have rejected invalid side");
@@ -125,7 +125,7 @@ describe("krn-comprehensive", () => {
 
     try {
       await program.methods
-        .placeBet(marketId, Array(32).fill(0xAA), 1, new anchor.BN(0))
+        .placeBet(marketId, Array(32).fill(0x01), 1, new anchor.BN(0))
         .accounts({ market: marketPda, commitment: commitPda, marketPool: poolPda, bettor: creator.publicKey, systemProgram: SystemProgram.programId })
         .rpc();
       expect.fail("Should have rejected zero amount");
@@ -177,7 +177,7 @@ describe("krn-comprehensive", () => {
       program.programId
     );
     await program.methods
-      .placeBet(marketId, Array(32).fill(0xAA), 1, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
+      .placeBet(marketId, Array(32).fill(0x01), 1, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
       .accounts({ market: marketPda, commitment: commitPda, marketPool: poolPda, bettor: creator.publicKey, systemProgram: SystemProgram.programId })
       .rpc();
 
@@ -354,7 +354,7 @@ describe("krn-comprehensive", () => {
 
     try {
       await program.methods
-        .placeBet(marketId, Array(32).fill(0xAA), 1, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
+        .placeBet(marketId, Array(32).fill(0x01), 1, new anchor.BN(0.1 * LAMPORTS_PER_SOL))
         .accounts({ market: marketPda, commitment: commitPda, marketPool: poolPda, bettor: creator.publicKey, systemProgram: SystemProgram.programId })
         .rpc();
       expect.fail("Should have rejected");
