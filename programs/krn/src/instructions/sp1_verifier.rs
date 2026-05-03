@@ -27,7 +27,7 @@ const SP1_V6_VK_ROOT: [u8; 32] = [
 
 /// KRN zkTLS program vkey hash
 pub const KRN_ZKTLS_VKEY_HASH: &str =
-    "0x00a52ad84180de09af0c46fdcc8396cd2ac13d73ba6df52ca7e59f29dcb8a9e4";
+    "0x0042cec2e9533532c92458d249fee1306ce0fd17806aa49f7374b1f9683a1607";
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct SP1ZkTlsProofData {

@@ -139,20 +139,20 @@ describe("krn-comprehensive", () => {
   // ============================================================
   // TEST 5: Fewer than 3 sources should REJECT
   // ============================================================
-  it("Rejects market with fewer than 3 required sources", async () => {
+  it("Rejects market with zero required sources", async () => {
     const marketId = uniqueMarketId("few-sources");
     const { marketPda } = getPdas(marketId, program.programId);
     const now = Math.floor(Date.now() / 1000);
 
     try {
       await program.methods
-        .initMarket(marketId, new anchor.BN(now + 3600), new anchor.BN(now + 7200), makeSourceConfigs().slice(0, 2), 2, new anchor.BN(100000), 0)
+        .initMarket(marketId, new anchor.BN(now + 3600), new anchor.BN(now + 7200), makeSourceConfigs().slice(0, 1), 0, new anchor.BN(100000), 0)
         .accounts({ market: marketPda, creator: creator.publicKey, systemProgram: SystemProgram.programId })
         .rpc();
       expect.fail("Should have rejected");
     } catch (e: any) {
       expect(e.error.errorCode.code).to.equal("MinSourcesRequired");
-      console.log("Fewer than 3 sources correctly rejected");
+      console.log("Zero required sources correctly rejected");
     }
   });
 

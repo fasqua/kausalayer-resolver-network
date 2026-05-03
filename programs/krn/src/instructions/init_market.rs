@@ -18,7 +18,7 @@ pub fn handle_init_market(
         source_configs.len() >= required_sources as usize,
         KrnError::MinSourcesRequired
     );
-    require!(required_sources >= 3, KrnError::MinSourcesRequired);
+    require!(required_sources >= 1, KrnError::MinSourcesRequired);
     require!(source_configs.len() <= 10, KrnError::TooManySources);
     require!(
         close_timestamp < resolution_deadline,
