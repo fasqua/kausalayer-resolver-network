@@ -112,6 +112,14 @@ pub fn handle_place_bet(
     }
 
     // Record commitment
+    // SECURITY NOTE: commitment_hash is not verified on-chain. This is by design.
+    // The commitment contains private inputs (secret_nonce, original_pubkey) that
+    // cannot be revealed on-chain without breaking bettor privacy.
+    // A malformed commitment_hash only harms the bettor themselves:
+    //   - claim_winning requires commitment.side == market.outcome
+    //   - The ZK circuit reconstructs the commitment and checks Merkle inclusion
+    //   - If commitment_hash doesn't match circuit reconstruction, proof is invalid
+    // Both directions fail for a dishonest bettor. No attack vector exists.
     let commitment = &mut ctx.accounts.commitment;
     commitment.market_id = market.market_id;
     commitment.commitment_hash = commitment_hash;

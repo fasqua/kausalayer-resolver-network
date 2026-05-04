@@ -25,6 +25,13 @@ pub fn handle_init_market(
         KrnError::InvalidTimestamps
     );
 
+    // Ensure close_timestamp is in the future (prevents griefing with already-expired markets)
+    let clock = Clock::get()?;
+    require!(
+        close_timestamp > clock.unix_timestamp,
+        KrnError::InvalidTimestamps
+    );
+
     let market = &mut ctx.accounts.market;
     market.market_id = market_id;
     market.creator = ctx.accounts.creator.key();
