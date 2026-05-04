@@ -14,3 +14,5 @@ prover/reclaim/proof-sample.json
 *.wtns
 zktls-prover/verify-test/
 zktls-prover/output/guest_input.json
+prover-service/dist/
+prover-service/node_modules/

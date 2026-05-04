@@ -1,0 +1,12 @@
+[
+  {
+    "domain": "api.coingecko.com",
+    "path": "/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
+    "jsonPath": ""
+  },
+  {
+    "domain": "site.api.espn.com",
+    "path": "/apis/site/v2/sports/basketball/nba/scoreboard",
+    "jsonPath": "events.0.competitions.0.competitors.1.score|events.0.competitions.0.competitors.0.score"
+  }
+]
